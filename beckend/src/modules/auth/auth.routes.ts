@@ -1,12 +1,18 @@
 import { Router } from "express";
 
-const authRouter = Router();
+import { asyncHandler } from "../../shared/http/async-handler";
+import { validate } from "../../shared/validation/validate.middleware";
 
-// Placeholder routes for module scaffolding.
-authRouter.all("*", (_req, res) => {
-  res.status(501).json({
-    message: "Auth module scaffolded. Endpoints are not implemented yet."
-  });
-});
+import { AuthController } from "./auth.controller";
+import { telegramSignInBodySchema } from "./auth.validation";
+
+const authRouter = Router();
+const authController = new AuthController();
+
+authRouter.post(
+  "/telegram/sign-in",
+  validate({ body: telegramSignInBodySchema }),
+  asyncHandler(authController.signInWithTelegram)
+);
 
 export default authRouter;

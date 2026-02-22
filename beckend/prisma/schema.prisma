@@ -37,14 +37,14 @@ enum ProductStatus {
 }
 
 enum OrderStatus {
-  CREATED
-  PENDING_PAYMENT
-  PAID
-  PROCESSING
-  SHIPPED
-  DELIVERED
+  PENDING
+  COMPLETED
   CANCELED
-  REFUNDED
+}
+
+enum BonusTransactionType {
+  EARN
+  SPEND
 }
 
 enum PaymentMethod {
@@ -92,6 +92,7 @@ model User {
   addresses       Address[]
   carts           Cart[]
   orders          Order[]
+  bonusTransactions BonusTransaction[]
   createdProducts Product[]      @relation("ProductCreatedBy")
   reviews         ProductReview[]
 
@@ -297,7 +298,7 @@ model Order {
   id               String      @id @default(uuid())
   orderNumber      String      @unique
   userId           String?
-  status           OrderStatus @default(CREATED)
+  status           OrderStatus @default(PENDING)
   currency         String      @default("USD")
   subtotal         Decimal     @db.Decimal(12, 2)
   discountTotal    Decimal     @default(0) @db.Decimal(12, 2)
@@ -320,11 +321,31 @@ model Order {
   billingAddress  Address?  @relation("OrderBillingAddress", fields: [billingAddressId], references: [id], onDelete: SetNull)
   items           OrderItem[]
   payments        Payment[]
+  bonusTransactions BonusTransaction[]
 
   @@index([userId, createdAt])
   @@index([status, createdAt])
   @@index([shippingAddressId])
   @@index([billingAddressId])
+}
+
+model BonusTransaction {
+  id             String               @id @default(uuid())
+  userId         String
+  orderId        String?
+  type           BonusTransactionType
+  points         Int
+  idempotencyKey String?
+  metadata       Json?
+  createdAt      DateTime             @default(now())
+
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  order Order? @relation(fields: [orderId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([orderId])
+  @@unique([userId, idempotencyKey])
+  @@unique([orderId, type])
 }
 
 model OrderItem {
